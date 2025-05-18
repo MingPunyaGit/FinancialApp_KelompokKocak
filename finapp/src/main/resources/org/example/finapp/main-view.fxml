@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns="http://javafx.com/javafx/11.0.1"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.example.finapp.controllers.MainController"
+      spacing="10"
+      style="-fx-padding: 20; -fx-background-color: #f5f5f5;">
+
+    <Label text="Aplikasi Manajemen Keuangan"
+           style="-fx-text-fill: #2c3e50; -fx-font-weight: bold; -fx-font-size: 24;">
+        <padding>
+            <Insets bottom="10"/>
+        </padding>
+    </Label>
+
+    <!-- Tambahkan di bagian atas VBox -->
+    <HBox alignment="TOP_RIGHT" style="-fx-padding: 10;">
+        <Label fx:id="welcomeLabel" style="-fx-font-weight: bold;"/>
+        <Button text="Logout" onAction="#handleLogout"
+                style="-fx-background-color: #e74c3c; -fx-text-fill: white;"/>
+    </HBox>
+
+    <HBox spacing="10">
+        <!-- Form Tambah Transaksi -->
+        <VBox spacing="10"
+              style="-fx-padding: 15; -fx-background-color: #ecf0f1; -fx-border-color: #bdc3c7; -fx-border-radius: 5;">
+            <Label text="Tambah Transaksi"
+                   style="-fx-text-fill: #34495e; -fx-font-weight: bold;"/>
+
+            <GridPane hgap="10" vgap="10">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="30"/>
+                    <ColumnConstraints percentWidth="70"/>
+                </columnConstraints>
+
+                <Label text="Keterangan:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <TextField fx:id="descriptionField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                <Label text="Jumlah:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <TextField fx:id="amountField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Tanggal:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <DatePicker fx:id="datePicker" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                <Label text="Jenis:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="typeComboBox" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+            </GridPane>
+
+            <Button text="Tambah" onAction="#handleAddTransaction"
+                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        </VBox>
+
+        <!-- Ringkasan Keuangan -->
+        <VBox spacing="10"
+              style="-fx-padding: 15; -fx-background-color: #ecf0f1; -fx-border-color: #bdc3c7; -fx-border-radius: 5;">
+            <Label text="Ringkasan Keuangan"
+                   style="-fx-text-fill: #34495e; -fx-font-weight: bold;"/>
+
+            <HBox spacing="20">
+                <VBox spacing="5">
+                    <Label text="Total Pemasukan:"/>
+                    <Label fx:id="totalIncomeLabel" style="-fx-text-fill: #27ae60; -fx-font-weight: bold;"/>
+                </VBox>
+
+                <VBox spacing="5">
+                    <Label text="Total Pengeluaran:"/>
+                    <Label fx:id="totalExpenseLabel" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold;"/>
+                </VBox>
+
+                <VBox spacing="5">
+                    <Label text="Saldo:"/>
+                    <Label fx:id="balanceLabel" style="-fx-text-fill: #3498db; -fx-font-weight: bold;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <!-- Tabel Daftar Transaksi -->
+    <Label text="Daftar Transaksi"
+           style="-fx-text-fill: #34495e; -fx-font-weight: bold;"/>
+    <TableView fx:id="transactionsTable"
+               style="-fx-background-color: white; -fx-border-color: #bdc3c7; -fx-border-radius: 5;">
+        <columns>
+            <TableColumn fx:id="idColumn" text="ID" prefWidth="100"/>
+            <TableColumn fx:id="descriptionColumn" text="Keterangan" prefWidth="200"/>
+            <TableColumn fx:id="amountColumn" text="Jumlah" prefWidth="100"/>
+            <TableColumn fx:id="dateColumn" text="Tanggal" prefWidth="100"/>
+            <TableColumn fx:id="typeColumn" text="Jenis" prefWidth="100"/>
+        </columns>
+    </TableView>
+</VBox>

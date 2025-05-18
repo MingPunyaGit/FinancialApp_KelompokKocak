@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/11.0.1"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="org.example.finapp.controllers.LoginController"
+           style="-fx-background-color: linear-gradient(to bottom right, #2c3e50, #3498db);">
+
+    <!-- Panel Login -->
+    <VBox alignment="CENTER" spacing="20" style="-fx-background-color: rgba(255,255,255,0.9); -fx-background-radius: 15; -fx-padding: 30; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 20, 0, 0, 0);">
+        <!-- Header -->
+        <VBox alignment="CENTER" spacing="10">
+<!--            <ImageView fitWidth="70" fitHeight="70" preserveRatio="true">-->
+<!--                <image>-->
+<!--                    <Image url="@/images/logo.png"/>-->
+<!--                </image>-->
+<!--            </ImageView>-->
+            <Text fill="#2c3e50" style="-fx-font-size: 24; -fx-font-weight: bold;" text="FINANCE APP"/>
+            <Text fill="#7f8c8d" style="-fx-font-size: 12; -fx-font-style: italic;" text="Kelola keuangan dengan mudah"/>
+        </VBox>
+
+        <!-- Form -->
+        <VBox alignment="CENTER" spacing="15" style="-fx-padding: 20 0 0 0;">
+            <TextField fx:id="usernameField" promptText="Username"
+                       style="-fx-pref-width: 250; -fx-pref-height: 40; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-font-size: 14;"/>
+
+            <PasswordField fx:id="passwordField" promptText="Password"
+                           style="-fx-pref-width: 250; -fx-pref-height: 40; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-font-size: 14;"/>
+
+            <Button fx:id="loginButton" text="MASUK"
+                    style="-fx-pref-width: 250; -fx-pref-height: 40; -fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14; -fx-background-radius: 5;"
+                    onAction="#handleLogin"/>
+        </VBox>
+
+        <!-- Footer -->
+        <HBox spacing="5" alignment="CENTER">
+            <Text fill="#7f8c8d" text="Belum punya akun?"/>
+            <Hyperlink text="Daftar sekarang" style="-fx-text-fill: #3498db; -fx-font-weight: bold;"/>
+        </HBox>
+    </VBox>
+</StackPane>
