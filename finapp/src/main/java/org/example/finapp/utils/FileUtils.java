@@ -11,6 +11,7 @@ public class FileUtils {
             oos.writeObject(transactions);
         } catch (IOException e) {
             e.printStackTrace();
+            AlertManager.showError("Gagal Menyimpan", "Tidak dapat menyimpan data transaksi ke file.");
         }
     }
 
@@ -18,13 +19,14 @@ public class FileUtils {
     public static List<Transaction> loadTransactions(String filename) {
         File file = new File(filename);
         if (!file.exists()) {
-            return null;
+            return null; // File belum ada, berarti belum ada data
         }
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename))) {
             return (List<Transaction>) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
+            AlertManager.showError("Gagal Memuat", "Gagal membaca data transaksi dari file.");
             return null;
         }
     }

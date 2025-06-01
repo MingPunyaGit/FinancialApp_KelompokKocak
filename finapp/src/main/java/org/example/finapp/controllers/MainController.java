@@ -3,9 +3,10 @@ package org.example.finapp.controllers;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.util.StringConverter;
+import javafx.scene.layout.HBox;
 import org.example.finapp.models.Transaction;
 import org.example.finapp.services.AuthService;
 import org.example.finapp.services.FinancialService;
@@ -14,250 +15,191 @@ import org.example.finapp.utils.SceneManager;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.Optional;
 
 public class MainController {
-    @FXML
-    private TextField descriptionField;
-    @FXML
-    private TextField amountField;
-    @FXML
-    private DatePicker datePicker;
-    @FXML
-    private ComboBox<Transaction.TransactionType> typeComboBox;
+    @FXML private TextField descriptionField, amountField, noteField;
+    @FXML private DatePicker datePicker;
+    @FXML private ComboBox<String> typeComboBox;
+    @FXML private CheckBox importantCheckBox;
+    @FXML private Label totalIncomeLabel, totalExpenseLabel, balanceLabel;
+    @FXML private Button addButton, updateButton, cancelButton;
+    @FXML private TableView<Transaction> transactionsTable;
+    @FXML private TableColumn<Transaction, String> idColumn;
+    @FXML private TableColumn<Transaction, String> descriptionColumn;
+    @FXML private TableColumn<Transaction, Double> amountColumn;
+    @FXML private TableColumn<Transaction, LocalDate> dateColumn;
+    @FXML private TableColumn<Transaction, Transaction.TransactionType> typeColumn;
+    @FXML private TableColumn<Transaction, Boolean> importantColumn;
+    @FXML private TableColumn<Transaction, String> noteColumn;
+    @FXML private TableColumn<Transaction, Void> actionColumn;
+    @FXML private PieChart transactionsPieChart;
 
-    @FXML
-    private Label totalIncomeLabel;
-    @FXML
-    private Label totalExpenseLabel;
-    @FXML
-    private Label balanceLabel;
-
-    @FXML
-    private TableView<Transaction> transactionsTable;
-    @FXML
-    private TableColumn<Transaction, String> idColumn;
-    @FXML
-    private TableColumn<Transaction, String> descriptionColumn;
-    @FXML
-    private TableColumn<Transaction, String> amountColumn;
-    @FXML
-    private TableColumn<Transaction, String> dateColumn;
-    @FXML
-    private TableColumn<Transaction, String> typeColumn;
-    @FXML
-    private TableColumn<Transaction, Void> actionColumn;
-
-    @FXML
-    private Button addButton;
-    @FXML
-    private Button updateButton;
-    @FXML
-    private Button cancelButton;
-
-    private FinancialService financialService = new FinancialService();
-    private ObservableList<Transaction> transactionsData = FXCollections.observableArrayList();
+    private FinancialService financialService;
+    private final AuthService authService = new AuthService();
+    private final ObservableList<Transaction> transactionsList = FXCollections.observableArrayList();
     private Transaction selectedTransaction = null;
-    private boolean isEditMode = false;
 
     @FXML
     public void initialize() {
-        // Inisialisasi ComboBox (Pemasukan/Pengeluaran)
-        typeComboBox.setItems(FXCollections.observableArrayList(
-                Transaction.TransactionType.INCOME,
-                Transaction.TransactionType.EXPENSE
-        ));
-        typeComboBox.setConverter(new StringConverter<Transaction.TransactionType>() {
-            @Override
-            public String toString(Transaction.TransactionType type) {
-                return type == null ? "" : type.getDisplayName();
-            }
+        try {
+            this.financialService = new FinancialService(authService.getCurrentUser());
+        } catch (IllegalStateException e) {
+            handleLogoutError();
+            return;
+        }
 
-            @Override
-            public Transaction.TransactionType fromString(String string) {
-                return null;
-            }
-        });
-
-        // Set tanggal default (hari ini)
-        datePicker.setValue(LocalDate.now());
-
-        // Inisialisasi TableView
-        idColumn.setCellValueFactory(cellData -> cellData.getValue().idProperty());
-        descriptionColumn.setCellValueFactory(cellData -> cellData.getValue().descriptionProperty());
-        amountColumn.setCellValueFactory(cellData -> cellData.getValue().amountProperty());
-        dateColumn.setCellValueFactory(cellData -> cellData.getValue().dateProperty());
-        typeColumn.setCellValueFactory(cellData -> cellData.getValue().typeProperty());
-
-        // Setup Action Column dengan tombol Edit dan Delete
-        setupActionColumn();
-
-        // Setup mode awal
-        setAddMode();
-
-        // Muat data awal
+        setupUIComponents();
         refreshData();
     }
 
-    private void setupActionColumn() {
-        actionColumn.setCellFactory(param -> new TableCell<Transaction, Void>() {
-            private final Button editBtn = new Button("Edit");
-            private final Button deleteBtn = new Button("Delete");
+    private void setupUIComponents() {
+        typeComboBox.setItems(FXCollections.observableArrayList(
+                Transaction.TransactionType.PEMASUKAN.toString(),
+                Transaction.TransactionType.PENGELUARAN.toString()
+        ));
 
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+        amountColumn.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
+        importantColumn.setCellValueFactory(new PropertyValueFactory<>("important"));
+        noteColumn.setCellValueFactory(new PropertyValueFactory<>("note"));
+
+        addActionButtonsToTable();
+        transactionsTable.setItems(transactionsList);
+        transactionsPieChart.setLegendVisible(true);
+    }
+
+    private void refreshData() {
+        transactionsList.setAll(financialService.getAllTransactions());
+        updateSummary();
+        transactionsTable.refresh();
+    }
+
+    private void addActionButtonsToTable() {
+        actionColumn.setCellFactory(param -> new TableCell<>() {
+            private final Button editButton = new Button("Edit");
+            private final Button deleteButton = new Button("Hapus");
+            private final HBox pane = new HBox(5, editButton, deleteButton);
             {
-                editBtn.setOnAction(event -> {
-                    Transaction transaction = getTableView().getItems().get(getIndex());
-                    editTransaction(transaction);
+                editButton.setOnAction(event -> {
+                    selectedTransaction = getTableView().getItems().get(getIndex());
+                    populateForm(selectedTransaction);
                 });
-
-                deleteBtn.setOnAction(event -> {
+                deleteButton.setOnAction(event -> {
                     Transaction transaction = getTableView().getItems().get(getIndex());
-                    deleteTransaction(transaction);
+                    financialService.deleteTransaction(transaction.getId());
+                    refreshData();
+                    clearForm();
                 });
-
-                editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 10px; -fx-padding: 2 8 2 8;");
-                deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 10px; -fx-padding: 2 8 2 8;");
             }
-
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    var hbox = new javafx.scene.layout.HBox(5);
-                    hbox.getChildren().addAll(editBtn, deleteBtn);
-                    setGraphic(hbox);
-                }
+                setGraphic(empty ? null : pane);
             }
         });
+    }
+
+    private void populateForm(Transaction tx) {
+        descriptionField.setText(tx.getDescription());
+        amountField.setText(String.valueOf(tx.getAmount()));
+        datePicker.setValue(tx.getDate());
+        typeComboBox.setValue(tx.getType().toString());
+        importantCheckBox.setSelected(tx.isImportant());
+        noteField.setText(tx.getNote());
+        showUpdateState();
     }
 
     @FXML
     private void handleAddTransaction() {
-        String description = descriptionField.getText().trim();
-        String amountText = amountField.getText().trim();
-        LocalDate date = datePicker.getValue();
-        Transaction.TransactionType type = typeComboBox.getValue();
+        if (!validateInput()) return;
 
-        // Validasi input
-        if (description.isEmpty() || amountText.isEmpty() || date == null || type == null) {
-            showAlert("Error", "Harap isi semua field!");
-            return;
-        }
+        financialService.addTransaction(
+                descriptionField.getText(),
+                Double.parseDouble(amountField.getText()),
+                datePicker.getValue(),
+                Transaction.TransactionType.valueOf(typeComboBox.getValue()),
+                importantCheckBox.isSelected(),
+                noteField.getText()
+        );
 
-        try {
-            double amount = Double.parseDouble(amountText);
-
-            if (isEditMode && selectedTransaction != null) {
-                // Update transaksi yang sudah ada
-                financialService.updateTransaction(selectedTransaction.getId(), description, amount, date, type);
-                showAlert("Sukses", "Transaksi berhasil diperbarui!", Alert.AlertType.INFORMATION);
-                setAddMode();
-            } else {
-                // Tambah transaksi baru
-                financialService.addTransaction(description, amount, date, type);
-                showAlert("Sukses", "Transaksi berhasil ditambahkan!", Alert.AlertType.INFORMATION);
-            }
-
-            refreshData();
-            clearForm();
-        } catch (NumberFormatException e) {
-            showAlert("Error", "Jumlah harus berupa angka!");
-        }
-    }
-
-    @FXML
-    private void handleCancel() {
-        setAddMode();
+        refreshData();
         clearForm();
     }
 
-    private void editTransaction(Transaction transaction) {
-        selectedTransaction = transaction;
-        isEditMode = true;
+    @FXML
+    private void handleUpdateTransaction() {
+        if (selectedTransaction == null || !validateInput()) return;
 
-        // Isi form dengan data transaksi yang dipilih
-        descriptionField.setText(transaction.getDescription());
-        amountField.setText(String.valueOf(transaction.getAmount()));
-        datePicker.setValue(transaction.getDate());
-        typeComboBox.setValue(transaction.getType());
+        financialService.updateTransaction(
+                selectedTransaction.getId(),
+                descriptionField.getText(),
+                Double.parseDouble(amountField.getText()),
+                datePicker.getValue(),
+                Transaction.TransactionType.valueOf(typeComboBox.getValue()),
+                importantCheckBox.isSelected(),
+                noteField.getText()
+        );
 
-        // Ubah tampilan tombol
-        addButton.setText("Update");
-        updateButton.setVisible(true);
-        cancelButton.setVisible(true);
+        refreshData();
+        clearForm();
+        showAddState();
     }
 
-    private void deleteTransaction(Transaction transaction) {
-        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmAlert.setTitle("Konfirmasi Hapus");
-        confirmAlert.setHeaderText("Hapus Transaksi");
-        confirmAlert.setContentText("Apakah Anda yakin ingin menghapus transaksi ini?");
+    private void updateSummary() {
+        double totalIncome = financialService.getTotalIncome();
+        double totalExpense = financialService.getTotalExpense();
+        double balance = financialService.getBalance();
 
-        Optional<ButtonType> result = confirmAlert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            if (financialService.deleteTransaction(transaction.getId())) {
-                showAlert("Sukses", "Transaksi berhasil dihapus!", Alert.AlertType.INFORMATION);
-                refreshData();
+        totalIncomeLabel.setText(formatRupiah(totalIncome));
+        totalExpenseLabel.setText(formatRupiah(totalExpense));
+        balanceLabel.setText(formatRupiah(balance));
 
-                // Jika transaksi yang dihapus sedang diedit, reset form
-                if (isEditMode && selectedTransaction != null &&
-                        selectedTransaction.getId().equals(transaction.getId())) {
-                    setAddMode();
-                    clearForm();
-                }
-            } else {
-                showAlert("Error", "Gagal menghapus transaksi!");
-            }
-        }
+        updatePieChart(totalIncome, totalExpense);
     }
 
-    private void setAddMode() {
-        isEditMode = false;
-        selectedTransaction = null;
-        addButton.setText("Tambah");
-        updateButton.setVisible(false);
-        cancelButton.setVisible(false);
-    }
-
-    private void refreshData() {
-        transactionsData.setAll(financialService.getAllTransactions());
-        transactionsTable.setItems(transactionsData);
-
-        // Update ringkasan keuangan
-        totalIncomeLabel.setText(String.format("Rp%,.2f", financialService.getTotalIncome()));
-        totalExpenseLabel.setText(String.format("Rp%,.2f", financialService.getTotalExpense()));
-        balanceLabel.setText(String.format("Rp%,.2f", financialService.getBalance()));
-    }
-
-    private void clearForm() {
-        descriptionField.clear();
-        amountField.clear();
-        datePicker.setValue(LocalDate.now());
-        typeComboBox.getSelectionModel().clearSelection();
-    }
-
-    private void showAlert(String title, String message) {
-        showAlert(title, message, Alert.AlertType.ERROR);
-    }
-
-    private void showAlert(String title, String message, Alert.AlertType alertType) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+    @FXML private void handleCancel() { clearForm(); showAddState(); }
+    private void showUpdateState() { addButton.setVisible(false); updateButton.setVisible(true); cancelButton.setVisible(true); }
+    private void showAddState() { addButton.setVisible(true); updateButton.setVisible(false); cancelButton.setVisible(false); selectedTransaction = null; }
 
     @FXML
     private void handleLogout() {
-        AuthService authService = new AuthService();
         authService.logout();
-        try {
-            SceneManager.showLoginView();
-        } catch (IOException e) {
-            AlertManager.showError("Error", "Gagal kembali ke halaman login");
-        }
+        try { SceneManager.showLoginView(); } catch (IOException e) { e.printStackTrace(); }
     }
+
+    private void handleLogoutError() {
+        try { AlertManager.showError("Error", "Sesi tidak ditemukan."); SceneManager.showLoginView(); } catch (IOException e) { e.printStackTrace(); }
+    }
+
+    private void clearForm() {
+        descriptionField.clear(); amountField.clear(); datePicker.setValue(null);
+        typeComboBox.setValue(null); importantCheckBox.setSelected(false); noteField.clear();
+    }
+
+    private boolean validateInput() {
+        String error = "";
+        if (descriptionField.getText() == null || descriptionField.getText().trim().isEmpty()) error += "Keterangan wajib diisi.\n";
+        if (amountField.getText() == null || amountField.getText().trim().isEmpty()) error += "Jumlah wajib diisi.\n";
+        else {
+            try { if (Double.parseDouble(amountField.getText()) <= 0) error += "Jumlah harus lebih dari 0.\n"; }
+            catch (NumberFormatException e) { error += "Jumlah harus angka valid.\n"; }
+        }
+        if (datePicker.getValue() == null) error += "Tanggal wajib dipilih.\n";
+        if (typeComboBox.getValue() == null) error += "Jenis transaksi wajib dipilih.\n";
+
+        if (!error.isEmpty()) { AlertManager.showError("Validasi Gagal", error); return false; }
+        return true;
+    }
+
+    private void updatePieChart(double income, double expense) {
+        ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList();
+        if (income > 0) pieChartData.add(new PieChart.Data("PEMASUKAN", income));
+        if (expense > 0) pieChartData.add(new PieChart.Data("PENGELUARAN", expense));
+        transactionsPieChart.setData(pieChartData);
+    }
+
+    private String formatRupiah(double amount) { return String.format("Rp %,.0f", amount).replace(',', '.'); }
 }

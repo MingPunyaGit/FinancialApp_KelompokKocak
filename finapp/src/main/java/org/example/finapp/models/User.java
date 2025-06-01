@@ -11,21 +11,7 @@ public class User {
         this.fullName = fullName;
     }
 
-    // Getters
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    // Setters
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public String getUsername() { return username; }
+    public String getPassword() { return password; }
+    public String getFullName() { return fullName; }
 }

@@ -1,85 +1,88 @@
 package org.example.finapp.services;
 
 import org.example.finapp.models.Transaction;
+import org.example.finapp.models.User;
+import org.example.finapp.utils.FileUtils;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class FinancialService {
-    private List<Transaction> transactions = new ArrayList<>();
+    private List<Transaction> transactions;
+    private final String dataFilename;
 
-    // Menambahkan transaksi baru
-    public void addTransaction(String description, double amount, LocalDate date, Transaction.TransactionType type) {
-        String id = UUID.randomUUID().toString();
-        transactions.add(new Transaction(id, description, amount, date, type));
+    public FinancialService(User currentUser) {
+        if (currentUser == null) {
+            throw new IllegalStateException("Tidak ada pengguna yang login untuk FinancialService.");
+        }
+        this.dataFilename = currentUser.getUsername() + "_transactions.dat";
+        loadTransactions();
     }
 
-    // Update transaksi yang sudah ada
-    public boolean updateTransaction(String id, String description, double amount, LocalDate date, Transaction.TransactionType type) {
+    // PERUBAHAN: Metode addTransaction diperbaiki
+    public void addTransaction(String description, double amount, LocalDate date, Transaction.TransactionType type,
+                               boolean important, String notes) {
+        String id = UUID.randomUUID().toString();
+        Transaction newTransaction = new Transaction(id, description, amount, date, type, important, notes);
+        this.transactions.add(newTransaction);
+        saveTransactions();
+    }
+
+    // PERUBAHAN: Metode updateTransaction diperbaiki
+    public boolean updateTransaction(String id, String description, double amount, LocalDate date,
+                                     Transaction.TransactionType type, boolean important, String notes) {
         for (int i = 0; i < transactions.size(); i++) {
-            Transaction transaction = transactions.get(i);
-            if (transaction.getId().equals(id)) {
-                // Ganti dengan transaksi yang baru
-                transactions.set(i, new Transaction(id, description, amount, date, type));
+            if (transactions.get(i).getId().equals(id)) {
+                Transaction updatedTransaction = new Transaction(id, description, amount, date, type, important, notes);
+                transactions.set(i, updatedTransaction);
+                saveTransactions();
                 return true;
             }
         }
         return false;
     }
 
-    // Menghapus transaksi
     public boolean deleteTransaction(String id) {
-        return transactions.removeIf(transaction -> transaction.getId().equals(id));
+        boolean removed = transactions.removeIf(t -> t.getId().equals(id));
+        if (removed) {
+            saveTransactions();
+        }
+        return removed;
     }
 
-    // Mencari transaksi berdasarkan ID
-    public Transaction getTransactionById(String id) {
-        return transactions.stream()
-                .filter(transaction -> transaction.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-    }
-
-    // Mengambil semua transaksi
     public List<Transaction> getAllTransactions() {
         return new ArrayList<>(transactions);
     }
 
-    // Menghitung total pemasukan
+    // PERUBAHAN: getTotalIncome dan getTotalExpense diperbaiki untuk menggunakan enum
     public double getTotalIncome() {
         return transactions.stream()
-                .filter(t -> t.getType() == Transaction.TransactionType.INCOME)
+                .filter(t -> t.getType() == Transaction.TransactionType.PEMASUKAN)
                 .mapToDouble(Transaction::getAmount)
                 .sum();
     }
 
-    // Menghitung total pengeluaran
     public double getTotalExpense() {
         return transactions.stream()
-                .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE)
+                .filter(t -> t.getType() == Transaction.TransactionType.PENGELUARAN)
                 .mapToDouble(Transaction::getAmount)
                 .sum();
     }
 
-    // Menghitung saldo (Pemasukan - Pengeluaran)
     public double getBalance() {
         return getTotalIncome() - getTotalExpense();
     }
 
-    // Method untuk mendapatkan transaksi berdasarkan rentang tanggal
-    public List<Transaction> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate) {
-        return transactions.stream()
-                .filter(t -> (t.getDate().isEqual(startDate) || t.getDate().isAfter(startDate)) &&
-                        (t.getDate().isEqual(endDate) || t.getDate().isBefore(endDate)))
-                .toList();
+    // PERUBAHAN: Logika simpan dan muat data dipindahkan ke sini
+    private void saveTransactions() {
+        FileUtils.saveTransactions(dataFilename, this.transactions);
     }
 
-    // Method untuk mendapatkan transaksi berdasarkan tipe
-    public List<Transaction> getTransactionsByType(Transaction.TransactionType type) {
-        return transactions.stream()
-                .filter(t -> t.getType() == type)
-                .toList();
+    private void loadTransactions() {
+        List<Transaction> loaded = FileUtils.loadTransactions(dataFilename);
+        this.transactions = (loaded != null) ? loaded : new ArrayList<>();
     }
 }
