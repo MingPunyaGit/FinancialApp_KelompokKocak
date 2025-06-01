@@ -10,14 +10,10 @@ import org.example.finapp.utils.SceneManager;
 import java.io.IOException;
 
 public class RegisterController {
-    @FXML
-    private TextField fullNameField;
-    @FXML
-    private TextField usernameField;
-    @FXML
-    private PasswordField passwordField;
-    @FXML
-    private PasswordField confirmPasswordField;
+    @FXML private TextField fullNameField;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private PasswordField confirmPasswordField;
 
     private final AuthService authService = new AuthService();
 
@@ -28,7 +24,7 @@ public class RegisterController {
         String password = passwordField.getText();
         String confirmPassword = confirmPasswordField.getText();
 
-        if (fullName.isEmpty() || username.isEmpty() || password.isEmpty()) {
+        if (fullName.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             AlertManager.showError("Registrasi Gagal", "Semua kolom harus diisi.");
             return;
         }
@@ -42,7 +38,7 @@ public class RegisterController {
             AlertManager.showInfo("Registrasi Berhasil", "Akun berhasil dibuat. Silakan masuk.");
             SceneManager.showLoginView();
         } else {
-            AlertManager.showError("Registrasi Gagal", "Username '" + username + "' sudah digunakan.");
+            AlertManager.showError("Registrasi Gagal", "Username '" + username + "' sudah digunakan atau terjadi kesalahan lain.");
         }
     }
 

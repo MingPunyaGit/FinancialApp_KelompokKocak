@@ -19,7 +19,6 @@ public class SceneManager {
     private static void loadScene(String fxmlPath) throws IOException {
         URL fxmlLocation = Main.class.getResource(fxmlPath);
         if (fxmlLocation == null) {
-            System.err.println("Tidak dapat menemukan file FXML di: " + fxmlPath);
             throw new IOException("Resource not found: " + fxmlPath);
         }
         Parent root = FXMLLoader.load(fxmlLocation);

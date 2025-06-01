@@ -30,7 +30,6 @@ public class LoginController {
             } else {
                 clearLastUser();
             }
-            AlertManager.showInfo("Login Berhasil", "Selamat datang kembali!");
             SceneManager.showMainView();
         } else {
             AlertManager.showError("Login Gagal", "Username atau password salah.");
